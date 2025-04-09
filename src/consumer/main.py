@@ -1,12 +1,16 @@
 """Kafka consumer module for processing messages from Kafka topics."""
 
 import asyncio
-import json
 import sys
+import uuid
+from datetime import datetime, timezone
 
 from aiokafka import AIOKafkaConsumer
 from aiokafka.errors import KafkaConnectionError, KafkaError
 from loguru import logger
+
+from schemas.messages import EventMessage, MessageType
+from schemas.serializers import deserialize_message
 
 # --- Logger Configuration ---
 # Remove default handler
@@ -38,7 +42,7 @@ async def create_consumer() -> AIOKafkaConsumer | None:
             TOPIC_NAME,
             bootstrap_servers=KAFKA_BROKER_URL,
             group_id=GROUP_ID,
-            value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+            value_deserializer=deserialize_message,
             auto_offset_reset="earliest",  # Start reading from the earliest message
             enable_auto_commit=True,  # Automatically commit offsets
             request_timeout_ms=30000,  # Increase request timeout to 30 seconds
@@ -65,23 +69,60 @@ async def create_consumer() -> AIOKafkaConsumer | None:
         return None
 
 
+async def process_message(message_data: dict) -> None:
+    """Process a received message using Pydantic models.
+
+    Args:
+        message_data: Raw message data from Kafka
+    """
+    try:
+        # Check if this is an old format message
+        if "message_type" not in message_data:
+            logger.warning("Received message in old format, converting to new format")
+            # Convert old format to new format
+            message_data = {
+                "message_id": str(message_data.get("message_id", str(uuid.uuid4()))),
+                "message_type": MessageType.EVENT,
+                "event_type": "legacy_event",
+                "payload": {"content": message_data.get("payload", "")},
+                "metadata": {"timestamp": datetime.now(timezone.utc).isoformat()},
+            }
+
+        # Validate and parse the message using Pydantic
+        message = EventMessage.model_validate(message_data)
+        logger.info(
+            f"Processing message: id={message.message_id}, "
+            f"type={message.message_type}, "
+            f"event_type={message.event_type}, "
+            f"created_at={message.timestamp.isoformat()}"
+        )
+        # Add your message processing logic here
+        logger.info(f"Message payload: {message.payload}")
+        if message.metadata:
+            # Format metadata for better readability
+            formatted_metadata = {
+                k: v.isoformat() if isinstance(v, datetime) else v for k, v in message.metadata.items()
+            }
+            logger.info(f"Message metadata: {formatted_metadata}")
+    except Exception as e:
+        logger.error(f"Error processing message: {e!s}")
+        raise
+
+
 async def consume_messages(consumer: AIOKafkaConsumer) -> None:
-    """Continuously consumes and prints messages from the subscribed topic."""
+    """Continuously consumes and processes messages from the subscribed topic."""
     logger.info("Starting message consumption... Press Ctrl+C to stop.")
     try:
         # Consume messages
         async for msg in consumer:
-            # Changed from DEBUG to INFO to ensure messages are visible
             logger.info(
-                f"Consumed msg: topic={msg.topic}, "
+                f"Received message: topic={msg.topic}, "
                 f"partition={msg.partition}, "
                 f"offset={msg.offset}, "
                 f"key={msg.key}, "
-                f"value={msg.value}, "
                 f"timestamp={msg.timestamp}"
             )
-            # Add processing logic here
-            # Example: logger.info(f"Processing message: {msg.value}")
+            await process_message(msg.value)
     except asyncio.CancelledError:
         logger.info("Consumption task cancelled.")  # Info level, expected during shutdown
     except Exception:

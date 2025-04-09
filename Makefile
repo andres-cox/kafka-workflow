@@ -65,11 +65,11 @@ kclean:
 # --- Application Execution ---
 run-producer:
 	@echo "Running Kafka producer..."
-	poetry run python src/producer/main.py
+	PYTHONPATH=src poetry run python src/producer/main.py
 
 run-consumer:
 	@echo "Running Kafka consumer... Press Ctrl+C to stop."
-	poetry run python src/consumer/main.py
+	PYTHONPATH=src poetry run python src/consumer/main.py
 
 kconsole-consumer:
 	@echo "Attempting to run Kafka console consumer in the pod..."

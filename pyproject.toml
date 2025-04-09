@@ -9,6 +9,7 @@ python = "^3.10"
 kafka-python = "^2.1.5"
 aiokafka = "^0.12.0"
 loguru = "^0.7.3"
+pydantic = "^2.11.3"
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.15.0"
@@ -50,6 +51,7 @@ known-first-party = ["kafka_workflow"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Unused imports
+"**/schemas/*.py" = ["N805"]  # Allow cls in Pydantic validators
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
