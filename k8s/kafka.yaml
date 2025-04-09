@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  labels:
+    app: kafka
+spec:
+  ports:
+  - name: kafka-port
+    port: 9092
+    protocol: TCP
+    # If using NodePort, uncomment below and adjust if needed
+    # nodePort: 30092
+  selector:
+    app: kafka
+  # type: NodePort # Use NodePort or LoadBalancer if accessing from outside the cluster directly
+  type: ClusterIP # Default, suitable for port-forwarding or in-cluster access
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-deployment
+  labels:
+    app: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka-broker
+        image: confluentinc/cp-kafka:7.3.0 # Using Confluent's Kafka image
+        ports:
+        - containerPort: 9092
+        env:
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          # Points to the Zookeeper service within the cluster
+          value: zookeeper-service:2181
+        # Simplified listener setup for port-forwarding access
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: PLAINTEXT:PLAINTEXT
+        - name: KAFKA_LISTENERS
+          value: PLAINTEXT://0.0.0.0:9092
+        - name: KAFKA_ADVERTISED_LISTENERS
+          # Advertises the address accessible via kubectl port-forward
+          value: PLAINTEXT://localhost:9092
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+          value: "0" 
