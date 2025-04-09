@@ -1,12 +1,14 @@
 """Kafka consumer module for processing messages from Kafka topics."""
 
 import asyncio
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
 
 from aiokafka import AIOKafkaConsumer
 from aiokafka.errors import KafkaConnectionError, KafkaError
+from dotenv import load_dotenv
 from loguru import logger
 
 from schemas.messages import EventMessage, MessageType
@@ -27,10 +29,12 @@ logger.add(
     ),
 )
 
-# Configuration
-KAFKA_BROKER_URL = "localhost:9092"
-TOPIC_NAME = "test-topic"
-GROUP_ID = "test-consumer-group"
+# Load environment variables from .env file
+load_dotenv()
+
+KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")
+TOPIC_NAME = os.getenv("TOPIC_NAME", "test-topic")
+GROUP_ID = os.getenv("GROUP_ID", "test-consumer-group")
 
 
 async def create_consumer() -> AIOKafkaConsumer | None:

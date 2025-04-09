@@ -1,12 +1,14 @@
 """Kafka producer module for sending messages to Kafka topics."""
 
 import asyncio
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
 
 from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaConnectionError, KafkaError
+from dotenv import load_dotenv
 from loguru import logger
 
 from schemas.messages import EventMessage, MessageType
@@ -27,9 +29,11 @@ logger.add(
     ),
 )
 
-# Configuration
-KAFKA_BROKER_URL = "localhost:9092"
-TOPIC_NAME = "test-topic"
+# Load environment variables from .env file
+load_dotenv()
+
+KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")
+TOPIC_NAME = os.getenv("TOPIC_NAME", "test-topic")
 
 
 async def create_producer() -> AIOKafkaProducer | None:
