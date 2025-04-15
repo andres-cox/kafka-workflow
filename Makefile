@@ -33,6 +33,19 @@ help:
 	@echo "  make test             Run pytest for testing"
 	@echo "  make clean            Clean up build artifacts"
 
+# --- Minikube Management ---
+minikube-start:
+	@echo "Starting Minikube..."
+	minikube start --cpus=4 --memory=8192 --driver=docker
+
+minikube-stop:
+	@echo "Stopping Minikube..."
+	minikube stop
+
+minikube-status:
+	@echo "Checking Minikube status..."
+	minikube status
+
 # --- Kubernetes Management ---
 kapply-zk:
 	@echo "Applying Zookeeper manifest..."
@@ -63,6 +76,10 @@ kclean:
 	poetry run kubectl delete -f $(ZOOKEEPER_YAML) --ignore-not-found=true
 
 # --- Application Execution ---
+run-api:
+	@echo "Running Kafka API..."
+	PYTHONPATH=src poetry run python -m api.main
+
 run-producer:
 	@echo "Running Kafka producer..."
 	PYTHONPATH=src poetry run python src/producer/main.py
