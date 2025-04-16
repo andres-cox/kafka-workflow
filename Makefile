@@ -24,19 +24,37 @@ help:
 	@echo "  make kapply-all       Apply all Kubernetes resources"
 	@echo "  make kclean           Delete Zookeeper and Kafka Kubernetes resources"
 	@echo "  make install          Install dependencies using Poetry"
+	@echo "  make install-dev      Install dependencies using Poetry with dev profile"
+	@echo "  make install-test     Install dependencies using Poetry with test profile"
 	@echo "  make format           Format code using ruff"
 	@echo "  make lint             Run ruff for linting"
 	@echo "  make test             Run pytest for testing"
-	@echo "  make clean            Clean up build artifacts"
+	@echo "  make clean            Clean up build artifacts" 
 	@echo "  make kforward-api     Forward API port from pod"
 	@echo "  make run-api          Run Kafka API"
+	@echo "  make kconsole-consumer Run Kafka console consumer"
 	@echo "  make kclean           Delete Kafka and Zookeeper resources"
 	@echo "  make kget-pods        Get pod statuses"
-
+	@echo "  make test-integration Run integration tests"
+	@echo "  make docker-build     Build Docker image"
+	@echo "  make docker-run       Run Docker container"	
+	@echo "  make minikube-start   Start Minikube"
+	@echo "  make minikube-docker-env-bash Set Minikube Docker environment, in order to use local docker images"
+	@echo "  make minikube-docker-env-fish Set Minikube Docker environment, in order to use local docker images"
+	@echo "  make minikube-stop    Stop Minikube"
+	@echo "  make minikube-status  Check Minikube status"
+	@echo "  make minikube-delete  Delete Minikube"
+	
 # --- Minikube Management ---
 minikube-start:
 	@echo "Starting Minikube..."
 	minikube start --cpus=4 --memory=8192 --driver=docker
+
+minikube-docker-env-bash:
+	eval $(minikube docker-env)
+
+minikube-docker-env-fish:
+	eval (minikube docker-env)
 
 minikube-stop:
 	@echo "Stopping Minikube..."
@@ -45,6 +63,17 @@ minikube-stop:
 minikube-status:
 	@echo "Checking Minikube status..."
 	minikube status
+
+minikube-delete:
+	@echo "Deleting Minikube..."
+	minikube delete
+
+# --- Docker Management ---
+docker-build:
+	docker build -t $(DOCKER_IMAGE_NAME) .
+
+docker-run:
+	docker run -p $(DOCKER_PORT):$(DOCKER_PORT) $(DOCKER_IMAGE_NAME)
 
 # --- Kubernetes Management ---
 kapply-zk:
@@ -101,8 +130,15 @@ kconsole-consumer:
 			--topic $(KAFKA_TOPIC) \
 			--from-beginning | cat
 
+# --- Poetry Management ---
 install:
 	poetry install
+
+install-dev:
+	poetry install --with dev
+
+install-test:
+	poetry install --with test
 
 format:
 	poetry run ruff format .
@@ -113,6 +149,9 @@ lint:
 
 test:
 	poetry run pytest
+
+test-integration:
+	poetry run pytest -v -s tests/integration
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

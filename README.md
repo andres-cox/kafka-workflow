@@ -20,46 +20,53 @@ A Python-based Kafka producer and consumer implementation using FastAPI and aiok
 ## Installation
 
 1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd kafka-workflow
-```
+   ```bash
+   git clone <your-repo-url>
+   cd kafka-workflow
+   ```
 
 2. Install dependencies:
-```bash
-make install
-```
+   ```bash
+   make install
+   ```
 
 ## Usage
 
+## Setup Minikube
+
+1. Start Minikube:
+   ```bash
+   make minikube-start
+   ```
+
 ### Local Development
 
-1. Start Kafka (using Kubernetes):
-```bash
-make kapply-all
-```
+1. Point your local Docker CLI to Minikube's internal Docker daemon, in order to use local images
+   ```bash
+   make minikube-docker-env-bash
+   
+   make minikube-docker-env-fish # For fish shell
+   ```
 
-2. Run the producer:
-```bash
-make run-producer
-```
+2. Initialize Docker:
+   ```bash
+   make docker-build
+   ```
 
-3. Run the consumer:
-```bash
-make run-consumer
-```
+3. Provision all services in minikube:
+   ```bash
+   make kapply-all
+   ```
 
-### Kubernetes Deployment
+4. Forward API port for Kafka:
+   ```bash
+   make kforward-api
+   ```
 
-1. Apply Kubernetes manifests:
-```bash
-make kapply-all
-```
-
-2. Forward Kafka port:
-```bash
-make kforward-kafka
-```
+5. Run producer and consumer tests:
+   ```bash
+   make test-integration
+   ```
 
 ## Development
 
@@ -72,17 +79,35 @@ make kforward-kafka
 
 ```
 kafka-workflow/
-├── src/
-│   └── kafka_workflow/
-│       ├── __init__.py
-│       ├── producer.py
-│       └── consumer.py
-├── kubernetes/
-│   ├── kafka/
-│   └── zookeeper/
+├── Dockerfile
 ├── Makefile
+├── README.md
+├── k8s
+│   ├── api-deployment.yaml
+│   ├── kafka.yaml
+│   └── zookeeper.yaml
+├── poetry.lock
 ├── pyproject.toml
-└── README.md
+├── src
+│   ├── kafka_workflow
+│   │   ├── api
+│   │   │   └── main.py
+│   │   ├── consumer
+│   │   │   └── main.py
+│   │   └── producer
+│   │       └── main.py
+│   └── shared
+│       ├── schemas
+│       │   ├── messages.py
+│       │   └── serializers.py
+│       └── utils
+│           └── logger.py
+└── tests
+    └── integration
+        ├── conftest.py
+        ├── test_consume.py
+        └── test_produce.py
+
 ```
 
 ## License

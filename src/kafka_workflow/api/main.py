@@ -8,9 +8,7 @@ from fastapi import FastAPI, HTTPException
 from kafka_workflow.consumer.main import KafkaConsumer
 from kafka_workflow.producer.main import KafkaProducer
 from shared.schemas.messages import EventMessage
-
 from shared.utils.logger import logger
-
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,7 +43,9 @@ async def lifespan(app: FastAPI):
     await consumer.stop()
     logger.info("Kafka producer and consumer stopped.")
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.post("/produce/")
 async def produce_message(message: EventMessage):

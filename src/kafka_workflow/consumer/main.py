@@ -72,7 +72,7 @@ class KafkaConsumer:
             async for msg in self.consumer:
                 await self.process_message(msg.value)
                 messages.append(msg.value)
-                
+
                 # Create a TopicPartition object for lookup
                 tp = TopicPartition(msg.topic, msg.partition)
                 if msg.offset >= end_offsets[tp] - 1:

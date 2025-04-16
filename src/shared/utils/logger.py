@@ -21,7 +21,7 @@ logger.add(
     enqueue=True,
     catch=True,
     backtrace=True,
-    diagnose=True
+    diagnose=True,
 )
 
 # You can also add file logging or other configurations here if needed
