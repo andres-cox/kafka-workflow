@@ -7,10 +7,10 @@ KAFKA_POD_SELECTOR = app=kafka
 ZOOKEEPER_POD_SELECTOR = app=zookeeper
 KAFKA_SERVICE = kafka-service
 KAFKA_YAML = k8s/kafka.yaml
+API_YAML = k8s/api-deployment.yaml
 ZOOKEEPER_YAML = k8s/zookeeper.yaml
 KAFKA_PORT_FORWARD = 9092:9092
-PRODUCER_SCRIPT = src/producer/main.py
-CONSUMER_SCRIPT = src/consumer/main.py
+API_PORT_FORWARD = 8000:8000
 KAFKA_TOPIC = test-topic
 KAFKA_BOOTSTRAP_SERVERS ?= localhost:9092
 
@@ -22,16 +22,16 @@ help:
 	@echo "  make kapply-zk        Apply Zookeeper Kubernetes resources"
 	@echo "  make kapply-kafka     Apply Kafka Kubernetes resources"
 	@echo "  make kapply-all       Apply all Kubernetes resources"
-	@echo "  make kforward-kafka   Forward Kafka port from pod"
-	@echo "  make run-producer     Run Kafka producer"
-	@echo "  make run-consumer     Run Kafka consumer"
-	@echo "  make kconsole-consumer Run Kafka console consumer in the pod (reads from beginning)"
 	@echo "  make kclean           Delete Zookeeper and Kafka Kubernetes resources"
 	@echo "  make install          Install dependencies using Poetry"
 	@echo "  make format           Format code using ruff"
 	@echo "  make lint             Run ruff for linting"
 	@echo "  make test             Run pytest for testing"
 	@echo "  make clean            Clean up build artifacts"
+	@echo "  make kforward-api     Forward API port from pod"
+	@echo "  make run-api          Run Kafka API"
+	@echo "  make kclean           Delete Kafka and Zookeeper resources"
+	@echo "  make kget-pods        Get pod statuses"
 
 # --- Minikube Management ---
 minikube-start:
@@ -49,57 +49,55 @@ minikube-status:
 # --- Kubernetes Management ---
 kapply-zk:
 	@echo "Applying Zookeeper manifest..."
-	poetry run kubectl apply -f $(ZOOKEEPER_YAML)
+	kubectl apply -f $(ZOOKEEPER_YAML)
 
 kapply-kafka:
 	@echo "Applying Kafka manifest..."
-	poetry run kubectl apply -f $(KAFKA_YAML)
+	kubectl apply -f $(KAFKA_YAML)
 
-kapply-all: kapply-zk kapply-kafka
+kapply-api:
+	@echo "Applying API manifest..."
+	kubectl apply -f $(API_YAML)
+
+kapply-all: kapply-zk kapply-kafka kapply-api
 	@echo "Applied Zookeeper and Kafka manifests."
 
 kget-pods:
 	@echo "Getting pod statuses..."
 	@echo "--- Zookeeper Pods ---"
-	poetry run kubectl get pods -l $(ZOOKEEPER_POD_SELECTOR)
+	kubectl get pods -l $(ZOOKEEPER_POD_SELECTOR)
 	@echo "--- Kafka Pods ---"
-	poetry run kubectl get pods -l $(KAFKA_POD_SELECTOR)
+	kubectl get pods -l $(KAFKA_POD_SELECTOR)
+	@echo "--- API Pods ---"
+	kubectl get pods -l $(API_POD_SELECTOR)
 
-kforward-kafka:
-	@echo "Starting Kafka port-forwarding on $(KAFKA_PORT_FORWARD)... Press Ctrl+C to stop."
-	@echo "NOTE: Run 'make run-producer' or 'make run-consumer' in another terminal."
-	poetry run kubectl port-forward svc/$(KAFKA_SERVICE) $(KAFKA_PORT_FORWARD)
+kforward-api:
+	@echo "Starting API port-forwarding on $(API_PORT_FORWARD)... Press Ctrl+C to stop."
+	kubectl port-forward svc/api $(API_PORT_FORWARD)
 
 kclean:
 	@echo "Deleting Kafka and Zookeeper resources..."
-	poetry run kubectl delete -f $(KAFKA_YAML) --ignore-not-found=true
-	poetry run kubectl delete -f $(ZOOKEEPER_YAML) --ignore-not-found=true
+	kubectl delete -f $(API_YAML) --ignore-not-found=true
+	kubectl delete -f $(KAFKA_YAML) --ignore-not-found=true
+	kubectl delete -f $(ZOOKEEPER_YAML) --ignore-not-found=true
 
 # --- Application Execution ---
 run-api:
 	@echo "Running Kafka API..."
-	PYTHONPATH=src poetry run python -m api.main
-
-run-producer:
-	@echo "Running Kafka producer..."
-	PYTHONPATH=src poetry run python src/producer/main.py
-
-run-consumer:
-	@echo "Running Kafka consumer... Press Ctrl+C to stop."
-	PYTHONPATH=src poetry run python src/consumer/main.py
+	poetry run python -m kafka_workflow.api.main
 
 kconsole-consumer:
 	@echo "Attempting to run Kafka console consumer in the pod..."
-	@POD_NAME=$$(poetry run kubectl get pods -l $(KAFKA_POD_SELECTOR) -o jsonpath='{.items[0].metadata.name}'); \
+	@POD_NAME=$$(kubectl get pods -l $(KAFKA_POD_SELECTOR) -o jsonpath='{.items[0].metadata.name}'); \
 	if [ -z "$$POD_NAME" ]; then \
 	    echo "Error: Kafka pod not found. Ensure it's running ('make kget-pods')."; \
 	    exit 1; \
 	fi; \
 	echo "Found Kafka pod: $$POD_NAME"; \
 	echo "Connecting to topic '$(KAFKA_TOPIC)' from beginning... Press Ctrl+C to stop."; \
-	poetry run kubectl exec -it $$POD_NAME -- \
+	kubectl exec -it $$POD_NAME -- \
 		kafka-console-consumer \
-			--bootstrap-server localhost:9092 \
+			--bootstrap-server kafka-service:9092 \
 			--topic $(KAFKA_TOPIC) \
 			--from-beginning | cat
 

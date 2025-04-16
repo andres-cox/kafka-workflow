@@ -50,7 +50,7 @@ spec:
           value: PLAINTEXT://0.0.0.0:9092
         - name: KAFKA_ADVERTISED_LISTENERS
           # Advertises the address accessible via kubectl port-forward
-          value: PLAINTEXT://localhost:9092
+          value: PLAINTEXT://kafka-service:9092
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "1"
         - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS

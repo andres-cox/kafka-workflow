@@ -5,9 +5,9 @@ from datetime import datetime
 
 from aiokafka import AIOKafkaConsumer, TopicPartition
 
-from schemas.messages import EventMessage
-from schemas.serializers import deserialize_message
-from src.utils.logger import logger
+from shared.schemas.messages import EventMessage
+from shared.schemas.serializers import deserialize_message
+from shared.utils.logger import logger
 
 
 class KafkaConsumer:

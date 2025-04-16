@@ -17,6 +17,11 @@ logger.add(
         "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
         "<level>{message}</level>"
     ),
+    colorize=True,
+    enqueue=True,
+    catch=True,
+    backtrace=True,
+    diagnose=True
 )
 
 # You can also add file logging or other configurations here if needed

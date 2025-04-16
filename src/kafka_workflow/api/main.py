@@ -5,11 +5,11 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 
-from src.consumer.main import KafkaConsumer
-from src.producer.main import KafkaProducer
-from schemas.messages import EventMessage
+from kafka_workflow.consumer.main import KafkaConsumer
+from kafka_workflow.producer.main import KafkaProducer
+from shared.schemas.messages import EventMessage
 
-from src.utils.logger import logger
+from shared.utils.logger import logger
 
 
 # Load environment variables from .env file
